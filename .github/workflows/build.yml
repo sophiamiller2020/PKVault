@@ -21,6 +21,47 @@ jobs:
         with:
           submodules: true
 
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore backend dependencies
+        run: dotnet restore PKVault.Backend/PKVault.Backend.csproj
+
+      - name: Generate PokeApi data
+        working-directory: ./PKVault.Backend
+        run: dotnet run -p:Mode=gen-pokeapi
+
+      - name: Start backend server
+        working-directory: ./PKVault.Backend
+        run: Start-Process -NoNewWindow dotnet -ArgumentList "run"
+
+      - name: Wait for backend to be ready
+        run: |
+          $maxAttempts = 30
+          $attempt = 0
+          $url = "http://localhost:5000/swagger/v1/swagger.json"
+          
+          Write-Host "Waiting for backend to be ready at $url..."
+          
+          while ($attempt -lt $maxAttempts) {
+            try {
+              $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Backend is ready!"
+                exit 0
+              }
+            } catch {
+              Write-Host "Attempt $($attempt + 1)/$maxAttempts - Backend not ready yet..."
+            }
+            Start-Sleep -Seconds 2
+            $attempt++
+          }
+          
+          Write-Host "Backend failed to start within timeout"
+          exit 1
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,6 +71,13 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Generate SDK from backend
+        working-directory: ./frontend
+        run: npm run gen:sdk
+        env:
+          NODE_TLS_REJECT_UNAUTHORIZED: 0
+          VITE_SERVER_URL: http://localhost:5000
+
       - name: Build frontend for desktop
         working-directory: ./frontend
         run: npm run build
@@ -37,17 +85,15 @@ jobs:
           VITE_SERVER_URL: http://localhost:5000
           VITE_DESKTOP: 1
 
+      - name: Stop backend server
+        run: Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+
       - name: Copy frontend to WinForm wwwroot
         run: |
           if (Test-Path "PKVault.WinForm\wwwroot") {
             Remove-Item -Recurse -Force "PKVault.WinForm\wwwroot"
           }
           Copy-Item -Recurse "frontend\dist" "PKVault.WinForm\wwwroot"
-
-      - name: Setup .NET 9.0
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
 
       - name: Restore dependencies
         run: dotnet restore PKVault.WinForm/PKVault.WinForm.csproj
