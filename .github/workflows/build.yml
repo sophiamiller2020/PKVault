@@ -43,13 +43,14 @@ jobs:
         run: |
           $maxAttempts = 30
           $attempt = 0
+          $timeoutSec = 2
           $url = "http://localhost:5000/swagger/v1/swagger.json"
           
           Write-Host "Waiting for backend to be ready at $url..."
           
           while ($attempt -lt $maxAttempts) {
             try {
-              $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
+              $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec $timeoutSec
               if ($response.StatusCode -eq 200) {
                 Write-Host "Backend is ready!"
                 exit 0
@@ -57,7 +58,7 @@ jobs:
             } catch {
               Write-Host "Attempt $($attempt + 1)/$maxAttempts - Backend not ready yet..."
             }
-            Start-Sleep -Seconds 2
+            Start-Sleep -Seconds $timeoutSec
             $attempt++
           }
           
@@ -88,7 +89,10 @@ jobs:
           VITE_DESKTOP: 1
 
       - name: Stop backend server
-        run: Stop-Process -Id $env:BACKEND_PID -Force -ErrorAction SilentlyContinue
+        run: |
+          if ($env:BACKEND_PID) {
+            Stop-Process -Id $env:BACKEND_PID -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Copy frontend to WinForm wwwroot
         run: |
