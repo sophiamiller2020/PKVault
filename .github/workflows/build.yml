@@ -36,14 +36,17 @@ jobs:
       - name: Start backend server
         run: |
           cd PKVault.Backend
-          $job = Start-Job -ScriptBlock {
-            Set-Location $using:PWD
-            dotnet run 2>&1 | Tee-Object -FilePath backend.log
+          $process = Start-Process dotnet -ArgumentList "run" -PassThru -NoNewWindow -RedirectStandardOutput "backend.log" -RedirectStandardError "backend-error.log"
+          echo "BACKEND_PID=$($process.Id)" >> $env:GITHUB_ENV
+          Start-Sleep -Seconds 10
+          Write-Host "Backend process started with PID: $($process.Id)"
+          if (!$process.HasExited) {
+            Write-Host "Backend process is running"
+          } else {
+            Write-Host "Backend process has exited!"
+            Get-Content backend-error.log
+            exit 1
           }
-          echo "BACKEND_JOB=$($job.Id)" >> $env:GITHUB_ENV
-          Start-Sleep -Seconds 5
-          Write-Host "Backend job started with ID: $($job.Id)"
-          Write-Host "Job state: $($job.State)"
 
       - name: Wait for backend to be ready
         run: |
@@ -96,13 +99,10 @@ jobs:
 
       - name: Stop backend server
         run: |
-          if ($env:BACKEND_JOB) {
-            $job = Get-Job -Id $env:BACKEND_JOB -ErrorAction SilentlyContinue
-            if ($job) {
-              Stop-Job -Id $env:BACKEND_JOB -ErrorAction SilentlyContinue
-              Remove-Job -Id $env:BACKEND_JOB -Force -ErrorAction SilentlyContinue
-              Write-Host "Stopped backend job $env:BACKEND_JOB"
-            }
+          if ($env:BACKEND_PID) {
+            Write-Host "Stopping backend process $env:BACKEND_PID"
+            Stop-Process -Id $env:BACKEND_PID -Force -ErrorAction SilentlyContinue
+            Write-Host "Backend process stopped"
           }
 
       - name: Copy frontend to WinForm wwwroot
