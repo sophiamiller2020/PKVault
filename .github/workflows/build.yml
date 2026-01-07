@@ -1,0 +1,37 @@
+name: Build PKVault
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore PKVault.WinForm/PKVault.WinForm.csproj
+
+      - name: Publish project
+        run: |
+          dotnet publish PKVault.WinForm/PKVault.WinForm.csproj `
+            -c Release -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PKVault-Windows
+          path: publish/*.exe
