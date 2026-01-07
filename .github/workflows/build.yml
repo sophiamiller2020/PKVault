@@ -18,6 +18,31 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend for desktop
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          VITE_SERVER_URL: http://localhost:5000
+          VITE_DESKTOP: 1
+
+      - name: Copy frontend to WinForm wwwroot
+        run: |
+          if (Test-Path "PKVault.WinForm\wwwroot") {
+            Remove-Item -Recurse -Force "PKVault.WinForm\wwwroot"
+          }
+          Copy-Item -Recurse "frontend\dist" "PKVault.WinForm\wwwroot"
 
       - name: Setup .NET 9.0
         uses: actions/setup-dotnet@v4
