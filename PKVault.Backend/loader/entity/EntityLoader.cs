@@ -132,7 +132,7 @@ public abstract class EntityLoader<DTO, E> : IEntityLoaderWrite where DTO : IWit
     public void MigrateGlobalEntities(DataEntityLoaders loaders)
     {
         var firstEntry = GetAllEntities().FirstOrDefault();
-        if (firstEntry.Value == null)
+        if (firstEntry.Key == null)
         {
             return;
         }
