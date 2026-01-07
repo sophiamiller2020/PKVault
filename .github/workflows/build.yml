@@ -34,8 +34,10 @@ jobs:
         run: dotnet run -p:Mode=gen-pokeapi
 
       - name: Start backend server
-        working-directory: ./PKVault.Backend
-        run: Start-Process -NoNewWindow dotnet -ArgumentList "run"
+        run: |
+          cd PKVault.Backend
+          $process = Start-Process -NoNewWindow -PassThru dotnet -ArgumentList "run"
+          echo "BACKEND_PID=$($process.Id)" >> $env:GITHUB_ENV
 
       - name: Wait for backend to be ready
         run: |
@@ -86,7 +88,7 @@ jobs:
           VITE_DESKTOP: 1
 
       - name: Stop backend server
-        run: Stop-Process -Name "dotnet" -Force -ErrorAction SilentlyContinue
+        run: Stop-Process -Id $env:BACKEND_PID -Force -ErrorAction SilentlyContinue
 
       - name: Copy frontend to WinForm wwwroot
         run: |
