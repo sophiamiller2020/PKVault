@@ -28,10 +28,11 @@ jobs:
       - name: Publish project
         run: |
           dotnet publish PKVault.WinForm/PKVault.WinForm.csproj `
-            -c Release -o publish
+            -c Release -o publish `
+            --runtime win-x64 --self-contained true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: PKVault-Windows
-          path: publish/*.exe
+          path: publish/PKVault.exe
