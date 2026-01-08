@@ -36,7 +36,7 @@ jobs:
       - name: Start backend server
         run: |
           cd PKVault.Backend
-          $process = Start-Process dotnet -ArgumentList "run" -PassThru -NoNewWindow -RedirectStandardOutput "backend.log" -RedirectStandardError "backend-error.log"
+          $process = Start-Process dotnet -ArgumentList "run","--configuration","Debug" -PassThru -NoNewWindow -RedirectStandardOutput "backend.log" -RedirectStandardError "backend-error.log"
           echo "BACKEND_PID=$($process.Id)" >> $env:GITHUB_ENV
           Start-Sleep -Seconds 10
           Write-Host "Backend process started with PID: $($process.Id)"
