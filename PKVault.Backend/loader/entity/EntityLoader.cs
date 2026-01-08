@@ -131,18 +131,18 @@ public abstract class EntityLoader<DTO, E> : IEntityLoaderWrite where DTO : IWit
 
     public void MigrateGlobalEntities(DataEntityLoaders loaders)
     {
-        var firstItem = GetAllEntities().First().Value;
-        if (firstItem == null)
+        var firstEntry = GetAllEntities().FirstOrDefault();
+        if (firstEntry.Key == null)
         {
             return;
         }
 
-        if (firstItem.SchemaVersion == GetLastSchemaVersion())
+        if (firstEntry.Value.SchemaVersion == GetLastSchemaVersion())
         {
             return;
         }
 
-        var migrateFn = GetMigrateFunc(firstItem.SchemaVersion) ?? throw new NotSupportedException($"Schema version {firstItem.SchemaVersion}");
+        var migrateFn = GetMigrateFunc(firstEntry.Value.SchemaVersion) ?? throw new NotSupportedException($"Schema version {firstEntry.Value.SchemaVersion}");
 
         migrateFn(loaders);
 
