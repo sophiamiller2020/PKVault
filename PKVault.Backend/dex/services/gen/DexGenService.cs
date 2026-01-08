@@ -121,6 +121,37 @@ public abstract class DexGenService(SaveFile save) //where Save : SaveFile
 
     protected string GetDexItemID(ushort species) => $"{species}_{save.ID32}";
 
+    public List<byte> GetTypes(PersonalInfo pi) => GetTypes(save.Generation, pi);
+
+    public static List<byte> GetTypes(byte generation, PersonalInfo pi)
+    {
+        byte[] types = [
+            generation <= 2 ? GetG12Type(pi.Type1) : pi.Type1,
+            generation <= 2 ? GetG12Type(pi.Type2) : pi.Type2
+        ];
+
+        return [.. types.Distinct().Select(type => (byte)(type + 1))];
+    }
+
+    private static byte GetG12Type(byte type)
+    {
+        return type switch
+        {
+            7 => 6,
+            8 => 7,
+            9 => 8,
+            20 => 9,
+            21 => 10,
+            22 => 11,
+            23 => 12,
+            24 => 13,
+            25 => 14,
+            26 => 15,
+            27 => 16,
+            _ => type,
+        };
+    }
+
     protected int[] GetAbilities(PersonalInfo pi)
     {
         Span<int> abilities = stackalloc int[pi.AbilityCount];
@@ -145,7 +176,6 @@ public abstract class DexGenService(SaveFile save) //where Save : SaveFile
         var itemForm = GetDexItemForm(species, ownedPkms, form, gender);
         itemForm.Context = save.Context;
         itemForm.Generation = save.Generation;
-        itemForm.Types = [.. itemForm.Types.Distinct().Select(type => (byte)(type + 1))];
         return itemForm;
     }
 
